@@ -1,0 +1,280 @@
+{
+  "name": "PDF Recruitment Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e685ee16-f93d-4293-b266-3bc96f517e23",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1FoF98ZokGI2rnojsy0k-ihyuKTr8Fs8j",
+          "mode": "list",
+          "cachedResultName": "CV_Inbox",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1FoF98ZokGI2rnojsy0k-ihyuKTr8Fs8j"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f8b9ced2-4533-4dc9-b6c4-cf8cd15b3956",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "bThYhrFCzoiarxXk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "40dc4589-56c3-42d9-9516-c7c1f3e290d5",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "bThYhrFCzoiarxXk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "2d0fdb13-2b61-4a67-8bf4-9dff42156e27",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a Recruiter. Output JSON only.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze this CV: \" + $json.text.replace(/\\n/g, \" \").replace(/\"/g, \"'\") + \" . Job: Software Engineer. Return JSON with: Candidate_Name, Score (0-100), Reasoning.\"\n    }\n  ],\n  \"response_format\": {\n    \"type\": \"json_object\"\n  }\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "551b1ddc-4c58-4028-8f9d-7c6258474e27",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Merr përgjigjen nga AI (që është tekst)\nconst pergjigja = $input.all()[0].json.choices[0].message.content;\n\n// 2. Ktheje në JSON të rregullt (që të ndajmë emrin dhe notën)\nreturn JSON.parse(pergjigja);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "9e1d6f6b-a2b6-470e-a218-3119ab40cb3f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1XXNhibIFNrtFH3V2ISTMX6itg2CnCAUXnxa4Cl2B8RE",
+          "mode": "list",
+          "cachedResultName": "Rekrutimet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XXNhibIFNrtFH3V2ISTMX6itg2CnCAUXnxa4Cl2B8RE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XXNhibIFNrtFH3V2ISTMX6itg2CnCAUXnxa4Cl2B8RE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate_Name": "={{ $json.Candidate_Name }}",
+            "Score": "={{ $json.Score }}",
+            "Reasoning": "={{ $json.Reasoning }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Candidate_Name",
+              "displayName": "Candidate_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reasoning",
+              "displayName": "Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        30.498872589323575
+      ],
+      "id": "f3352a6c-af1e-463c-8416-38c5be768c07",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CyRQ3nDhR2NyouIT",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8bfc8b58-4e8c-4ec3-8fa9-c1e02fca3b7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d84bb1119527ccd94f1bf136cfbadc83ca1338635d9e99ab82cde9c65751ab32"
+  },
+  "id": "iQnSrTRf5Mo0QzCi",
+  "tags": []
+}
