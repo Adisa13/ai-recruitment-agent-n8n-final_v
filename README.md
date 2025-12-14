@@ -13,7 +13,7 @@ The Workflow is a sequential process that is triggered by an event in Google Dri
 
 * AI Analysis: The raw CV text is sent to the Groq service (using the llama-3.3-70b-versatile model).
 
-* Scoring: The AI assigns the CV a Score ranging from 1 to 100 and generates a critical Reasoning (Arsyetimi).
+* Scoring: The AI assigns the CV a Score ranging from 1 to 100 and generates a critical Reasoning .
 
 * Critical Rule: A strict rule is set in the Prompt that forces the AI to score resumes lacking relevant tech skills or experience between 1 and 10.
 
